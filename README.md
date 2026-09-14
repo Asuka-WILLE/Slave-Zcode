@@ -48,6 +48,8 @@
 
 ## 安装插件
 
+如果由能够执行 PowerShell 和 Codex CLI 的智能体负责安装，请先阅读 [install for agent.md](./install%20for%20agent.md)；它包含幂等安装、来源冲突检查、验证和桌面桥接边界。
+
 ### 方式 A：从 GitHub 添加仓库市场
 
 这是普通使用者推荐的方式。打开 PowerShell，执行：
