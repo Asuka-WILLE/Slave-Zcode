@@ -41,7 +41,7 @@
 - Windows 10/11；
 - ZCode 3.12.1，已在其中配置好 Coding Plan 或第三方 API；
 - Node.js 24 或更高版本；
-- Codex CLI 或支持本地插件的 Codex 客户端；
+- 支持 `plugin marketplace`、`plugin add` 和 `plugin list` 的 Codex CLI；只安装桌面 App 不一定会把 CLI 命令加入外部 PowerShell 的 `PATH`；
 - 项目目录的绝对路径。
 
 插件沿用 ZCode 中已经配置的模型通道。API Key、Cookie 和账号登录状态都留在 ZCode，不要写入 prompt、.mcp.json 或 Issue。
@@ -201,6 +201,46 @@ zcode_stop_task 只发送停止请求，不杀 ZCode 进程，也不回滚文件
 $env:ZCODE_INSTALL_DIR = 'D:\Apps\ZCode'
 npm run doctor
 ~~~
+
+### `codex` 不是命令或 `plugin add` 不存在
+
+这类错误发生在插件安装之前，表示当前 PowerShell 没有找到可用的 Codex CLI，或者找到的 CLI 版本还没有插件子命令。桌面 App 内置的运行时路径可能只在集成终端会话中临时加入 `PATH`，不会自动出现在另一个 PowerShell 窗口里。
+
+在外部 PowerShell 中按官方安装脚本安装或更新当前用户的 Codex CLI：
+
+~~~powershell
+irm https://chatgpt.com/codex/install.ps1 | iex
+~~~
+
+安装完成后关闭当前 PowerShell，重新打开一个窗口，再确认命令和子命令：
+
+~~~powershell
+Get-Command codex
+codex --version
+codex plugin --help
+~~~
+
+`plugin --help` 至少应列出 `marketplace`、`add` 和 `list`。如果刚安装的命令仍未被发现，可在当前窗口临时补充官方默认安装目录后重试：
+
+~~~powershell
+$codexInstall = Join-Path $env:LOCALAPPDATA 'Programs\OpenAI\Codex\bin'
+if (-not (Test-Path (Join-Path $codexInstall 'codex.exe'))) {
+  throw "Codex CLI was not found in $codexInstall"
+}
+$env:Path = "$codexInstall;$env:Path"
+Get-Command codex
+codex plugin --help
+~~~
+
+确认 CLI 可用后，只复制下面的纯文本命令。不要把 Markdown 链接的 `[文字](地址)` 一起复制，也不要在 `@` 前加反斜杠：
+
+~~~powershell
+codex plugin marketplace add "https://github.com/Asuka-WILLE/Slave-Zcode.git"
+codex plugin add "zcode-subagent@slave-zcode"
+codex plugin list
+~~~
+
+如果你只在 Codex 桌面 App 的集成终端中运行这些命令，请先在同一个终端执行 `codex plugin --help`；确认该会话确实包含 `add` 和 `list` 后，再执行安装。不要把带有随机目录名的桌面内部 CLI 路径永久写入 `PATH`，桌面更新后该路径可能变化。
 
 ### DESKTOP_UNAVAILABLE 或 DESKTOP_TARGET_REQUIRED
 
