@@ -5,6 +5,7 @@ import type { DesktopAdapter, StoredTask } from '../../types.js';
 import { CdpClient } from './cdp.js';
 import { lookupServices, openWorkspaceExpression, serviceExpression } from './renderer.js';
 import { projectSnapshot } from './project.js';
+import { discoverZCodeInstall, installationError } from './install.js';
 
 function installedVersion(install: string): string {
   const fd = openSync(join(install, 'resources', 'app.asar'), 'r');
@@ -21,11 +22,24 @@ function installedVersion(install: string): string {
   } finally { closeSync(fd); }
 }
 export class ZCodeDesktopAdapter implements DesktopAdapter {
-  constructor(readonly cdp = new CdpClient(), readonly install = process.env.ZCODE_INSTALL_DIR || 'C:\\Program Files\\ZCode') {}
+  private cachedInstall?: string;
+  constructor(readonly cdp = new CdpClient(), readonly installOverride = process.env.ZCODE_INSTALL_DIR) {}
   async health() {
     let version: string;
-    try { version = installedVersion(this.install); }
-    catch { throw new BridgeError('ZCODE_NOT_FOUND', 'Cannot read ZCode installation. Set ZCODE_INSTALL_DIR.'); }
+    const discovery = this.cachedInstall
+      ? { path: this.cachedInstall, candidates: [{ path: this.cachedInstall, source: 'cached' }], checked: [this.cachedInstall] }
+      : discoverZCodeInstall({
+          ...(this.installOverride ? { env: { ...process.env, ZCODE_INSTALL_DIR: this.installOverride } } : {}),
+          readVersion: installedVersion,
+          preferredVersion: '3.12.1',
+        });
+    if (!discovery.path) throw new BridgeError('ZCODE_NOT_FOUND', installationError(discovery));
+    try { version = installedVersion(discovery.path); this.cachedInstall = discovery.path; }
+    catch (error) {
+      this.cachedInstall = undefined;
+      const detail = error instanceof Error ? ` ${error.message}` : '';
+      throw new BridgeError('ZCODE_NOT_FOUND', `ZCode was found at ${discovery.path}, but its installation could not be read.${detail}`);
+    }
     if (version !== '3.12.1') throw new BridgeError('UNSUPPORTED_VERSION', `Desktop ${version} has not been validated; this adapter supports 3.12.1.`);
     const ready = await this.cdp.evaluate<boolean>(`(() => {const s=${lookupServices};return !!s.zcodeTaskService && !!s.zcodeAgentService;})()`);
     return { connected: ready, desktop_version: version, adapter: 'desktop-3.12.1', transport: 'local-cdp', permission_mode: 'build', model: 'inherited from ZCode', automatic_permission_approval: false };

@@ -7,6 +7,10 @@ const required = [
   '.mcp.json',
   'skills/zcode-delegation/SKILL.md',
   'bundle/server.mjs',
+  'scripts/doctor.mjs',
+  'scripts/start-zcode.ps1',
+  'scripts/asar.mjs',
+  'scripts/zcode-install.mjs',
   'README.md',
   '.agents/plugins/marketplace.json',
 ];

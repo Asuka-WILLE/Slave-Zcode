@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { TaskStore } from '../src/storage/store.js';
 import { TaskManager } from '../src/tasks/manager.js';
 import { projectSnapshot } from '../src/adapters/zcode-desktop/project.js';
 import { localEndpoint } from '../src/adapters/zcode-desktop/cdp.js';
 import { serviceExpression } from '../src/adapters/zcode-desktop/renderer.js';
 import { changedFiles, snapshotFiles } from '../src/results/files.js';
+import { discoverZCodeInstall, installationError } from '../src/adapters/zcode-desktop/install.js';
 import type { DesktopAdapter, Observation, StoredTask } from '../src/types.js';
 
 class Fake implements DesktopAdapter {
@@ -139,4 +140,52 @@ test('reading a task during initialization does not mark it unknown',async t=>{
  release();
  await manager.drain();
  assert.ok((await manager.get(task.task_id)).zcode_session_id);
+});
+
+test('ZCode installation discovery honors an explicit override and validates its shape',async t=>{
+ const root=await mkdtemp(join(tmpdir(),'zcode install override '));
+ t.after(()=>rm(root,{recursive:true,force:true}));
+ const install=join(root,'custom-zcode');
+ await mkdir(join(install,'resources'),{recursive:true});
+ await writeFile(join(install,'ZCode.exe'),''); await writeFile(join(install,'resources','app.asar'),'');
+ const found=discoverZCodeInstall({platform:'win32',env:{ZCODE_INSTALL_DIR:install}});
+ assert.equal(found.path,resolve(install)); assert.equal(found.explicit,resolve(install));
+ const missing=discoverZCodeInstall({platform:'win32',env:{ZCODE_INSTALL_DIR:join(root,'missing')}});
+ assert.equal(missing.path,undefined); assert.match(installationError(missing),/ZCODE_INSTALL_DIR/);
+});
+
+test('ZCode installation discovery uses registry and PATH candidates and prefers the supported version',async t=>{
+ const root=await mkdtemp(join(tmpdir(),'zcode install candidates '));
+ t.after(()=>rm(root,{recursive:true,force:true}));
+ const unsupported=join(root,'registered'); const supported=join(root,'portable');
+ for(const install of [unsupported,supported]){
+   await mkdir(join(install,'resources'),{recursive:true});
+   await writeFile(join(install,'ZCode.exe'),''); await writeFile(join(install,'resources','app.asar'),'');
+ }
+ const result=discoverZCodeInstall({
+   platform:'win32', env:{},
+   processPaths:[],
+   registryPaths:[`"${join(unsupported,'Uninstall ZCode.exe')}" /allusers`],
+   pathPaths:[join(supported,'ZCode.exe')],
+   shortcutPaths:[],
+   readVersion:path=>path===resolve(supported)?'3.12.1':'3.11.0', preferredVersion:'3.12.1',
+ });
+ assert.equal(result.path,resolve(supported));
+ assert.deepEqual(result.candidates.map(item=>item.source),['Windows-registry','PATH']);
+});
+
+test('ZCode installation discovery reports the checked scope when no candidate exists',()=>{
+ const base=join(tmpdir(),'zcode missing candidates deterministic');
+ const result=discoverZCodeInstall({platform:'win32',env:{ProgramFiles:join(base,'ProgramFiles'),LOCALAPPDATA:join(base,'LocalAppData')},processPaths:[],registryPaths:[],pathPaths:[],shortcutPaths:[]});
+ assert.equal(result.path,undefined); assert.ok(result.checked.length>0); assert.match(installationError(result),/Checked:/);
+});
+
+test('ZCode installation discovery accepts a custom Start-menu shortcut target',async t=>{
+ const root=await mkdtemp(join(tmpdir(),'zcode install shortcut '));
+ t.after(()=>rm(root,{recursive:true,force:true}));
+ const install=join(root,'custom-zcode');
+ await mkdir(join(install,'resources'),{recursive:true});
+ await writeFile(join(install,'ZCode.exe'),''); await writeFile(join(install,'resources','app.asar'),'');
+ const result=discoverZCodeInstall({platform:'win32',env:{},processPaths:[],registryPaths:[],pathPaths:[],shortcutPaths:[join(install,'ZCode.exe')]});
+ assert.equal(result.path,resolve(install)); assert.equal(result.candidates[0]?.source,'Start-menu-shortcut');
 });

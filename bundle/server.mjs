@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve3.call(this, root, ref);
+      let _sch = resolve4.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve3(root, ref) {
+    function resolve4(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3841,7 +3841,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve3(baseURI, relativeURI, options) {
+    function resolve4(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4209,7 +4209,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve3,
+      resolve: resolve4,
       resolveComponent,
       equal,
       serialize,
@@ -15856,7 +15856,7 @@ var recursive = /* @__PURE__ */ new WeakMap();
 var NONE = 0;
 var ASSUMED = 1;
 var PROVEN = 2;
-function isRecursive(inst, stack, resolve3) {
+function isRecursive(inst, stack, resolve4) {
   const cached2 = recursive.get(inst);
   if (cached2 !== void 0)
     return cached2 ? PROVEN : NONE;
@@ -15866,7 +15866,7 @@ function isRecursive(inst, stack, resolve3) {
   let result = NONE;
   const check2 = (child) => {
     if (result !== PROVEN && child?._zod) {
-      const answer = isRecursive(child, stack, resolve3);
+      const answer = isRecursive(child, stack, resolve4);
       if (answer > result)
         result = answer;
     }
@@ -15877,7 +15877,7 @@ function isRecursive(inst, stack, resolve3) {
       const desc = Object.getOwnPropertyDescriptor(sh, key);
       if (spread && !desc.enumerable)
         continue;
-      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve3) : NONE;
+      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve4) : NONE;
       if (child > answer)
         answer = child;
     }
@@ -15941,7 +15941,7 @@ function isRecursive(inst, stack, resolve3) {
       break;
     // `$ZodLazy` caches its inner on the def, so a resolved edge is followed exactly
     case "lazy": {
-      const inner = def._cachedInner ?? (resolve3 ? inst._zod.innerType : void 0);
+      const inner = def._cachedInner ?? (resolve4 ? inst._zod.innerType : void 0);
       merge2(inner ? isRecursive(inner, stack, false) : ASSUMED);
       break;
     }
@@ -34349,7 +34349,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error62) {
@@ -34366,7 +34366,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       const earlyReject = (error62) => {
         reject(error62);
       };
@@ -34444,7 +34444,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve3(parseResult.data);
+            resolve4(parseResult.data);
           }
         } catch (error62) {
           reject(error62);
@@ -34705,12 +34705,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve3, interval);
+      const timeoutId = setTimeout(resolve4, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -35801,7 +35801,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -36465,12 +36465,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message2) {
-    return new Promise((resolve3) => {
+    return new Promise((resolve4) => {
       const json2 = serializeMessage(message2);
       if (this._stdout.write(json2)) {
-        resolve3();
+        resolve4();
       } else {
-        this._stdout.once("drain", resolve3);
+        this._stdout.once("drain", resolve4);
       }
     });
   }
@@ -36478,12 +36478,12 @@ var StdioServerTransport = class {
 
 // src/mcp/server.ts
 import { homedir } from "node:os";
-import { join as join3, resolve as resolve2 } from "node:path";
+import { join as join4, resolve as resolve3 } from "node:path";
 import { pathToFileURL } from "node:url";
 
 // src/adapters/zcode-desktop/adapter.ts
 import { openSync, readSync, closeSync } from "node:fs";
-import { join } from "node:path";
+import { join as join2 } from "node:path";
 
 // src/errors.ts
 var BridgeError = class extends Error {
@@ -36552,7 +36552,7 @@ var CdpClient = class {
     const address = new URL(target.webSocketDebuggerUrl);
     if (address.protocol !== "ws:" || address.hostname !== new URL(this.endpoint).hostname || address.port !== new URL(this.endpoint).port)
       throw new BridgeError("INVALID_ENDPOINT", "Unexpected CDP WebSocket address.");
-    await new Promise((resolve3, reject) => {
+    await new Promise((resolve4, reject) => {
       const ws = new WebSocket(address);
       this.socket = ws;
       const timer = setTimeout(() => {
@@ -36561,7 +36561,7 @@ var CdpClient = class {
       }, 5e3);
       ws.addEventListener("open", () => {
         clearTimeout(timer);
-        resolve3();
+        resolve4();
       }, { once: true });
       ws.addEventListener("error", () => {
         clearTimeout(timer);
@@ -36592,13 +36592,13 @@ var CdpClient = class {
   }
   async call(method, params = {}, timeout = 3e4) {
     await this.connect();
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       const id2 = this.nextId++;
       const timer = setTimeout(() => {
         this.pending.delete(id2);
         reject(new BridgeError("CDP_TIMEOUT", `${method} timed out; its execution may continue.`, true));
       }, timeout);
-      this.pending.set(id2, { resolve: resolve3, reject, timer });
+      this.pending.set(id2, { resolve: resolve4, reject, timer });
       try {
         this.socket.send(JSON.stringify({ id: id2, method, params }));
       } catch (e) {
@@ -36725,9 +36725,158 @@ ${p.state?.status || "unknown"}: ${String(output2).slice(-3e3)}`);
   };
 }
 
+// src/adapters/zcode-desktop/install.ts
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+var executableName = "ZCode.exe";
+function clean(value) {
+  if (typeof value !== "string") return void 0;
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
+  return trimmed || void 0;
+}
+function executablePath(value) {
+  const match = value.match(/^\s*"([^"]+\.(?:exe|ico))"(?:\s|,|$)/i) || value.match(/^\s*(.+?\.(?:exe|ico))(?:\s|,|$)/i);
+  return clean(match?.[1] || value) || value;
+}
+function asInstallDir(value) {
+  if (typeof value !== "string" || !value.trim()) return void 0;
+  const input2 = clean(value);
+  if (!input2) return void 0;
+  const path2 = executablePath(value);
+  if (path2.toLowerCase().endsWith(".exe") || path2.toLowerCase().endsWith(".ico")) return dirname(path2);
+  if (input2.toLowerCase().endsWith(".exe") || input2.toLowerCase().endsWith(".ico")) return dirname(input2);
+  return clean(path2);
+}
+function validInstall(path2) {
+  return existsSync(join(path2, executableName)) && existsSync(join(path2, "resources", "app.asar"));
+}
+function commandLines(command, args, timeout) {
+  try {
+    const output2 = execFileSync(command, args, { encoding: "utf8", timeout, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] });
+    return output2.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+function runningProcessPaths(platform) {
+  if (platform !== "win32") return [];
+  return commandLines("powershell.exe", [
+    "-NoLogo",
+    "-NoProfile",
+    "-NonInteractive",
+    "-Command",
+    "(Get-Process -Name ZCode -ErrorAction SilentlyContinue | Where-Object { $_.Path } | Select-Object -ExpandProperty Path)"
+  ], 1500);
+}
+function registeredInstallPaths(platform) {
+  if (platform !== "win32") return [];
+  const script = [
+    "$keys = @(",
+    "  'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',",
+    "  'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',",
+    "  'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'",
+    ")",
+    "$items = Get-ItemProperty -Path $keys -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match '(?i)z[\\s-]?code' }",
+    "foreach ($item in $items) {",
+    "  if ($item.InstallLocation) { $item.InstallLocation }",
+    "  if ($item.DisplayIcon) { $item.DisplayIcon }",
+    "  if ($item.UninstallString) { $item.UninstallString }",
+    "}"
+  ].join("\n");
+  return commandLines("powershell.exe", ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script], 2e3);
+}
+function pathExecutablePaths(platform) {
+  if (platform !== "win32") return [];
+  return commandLines("where.exe", [executableName], 1e3);
+}
+function shortcutTargetPaths(platform) {
+  if (platform !== "win32") return [];
+  const script = [
+    "$roots = @(",
+    "  (Join-Path $env:APPDATA 'Microsoft\\Windows\\Start Menu\\Programs'),",
+    "  (Join-Path $env:ProgramData 'Microsoft\\Windows\\Start Menu\\Programs'),",
+    "  (Join-Path $env:PUBLIC 'Desktop'),",
+    "  (Join-Path $env:USERPROFILE 'Desktop')",
+    ")",
+    "$shell = New-Object -ComObject WScript.Shell",
+    "$items = Get-ChildItem -Path $roots -Filter '*.lnk' -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.BaseName -match '(?i)z.?code' }",
+    "foreach ($item in $items) {",
+    "  $shortcut = $shell.CreateShortcut($item.FullName)",
+    "  if ($shortcut.TargetPath -match '(?i)\\\\ZCode\\.exe$') { $shortcut.TargetPath }",
+    "}"
+  ].join("\n");
+  return commandLines("powershell.exe", ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script], 2500);
+}
+function standardPaths(env) {
+  const result = [];
+  const add = (base, suffix, source) => {
+    if (base) result.push({ path: join(base, suffix), source });
+  };
+  add(env.ProgramW6432, "ZCode", "ProgramW6432");
+  add(env.ProgramFiles, "ZCode", "ProgramFiles");
+  add(env["ProgramFiles(x86)"], "ZCode", "ProgramFiles(x86)");
+  add(env.LOCALAPPDATA, join("Programs", "ZCode"), "LocalAppData/Programs");
+  add(env.LOCALAPPDATA, "ZCode", "LocalAppData");
+  add(env.APPDATA, "ZCode", "AppData");
+  add(env.ProgramData, "ZCode", "ProgramData");
+  add(env.USERPROFILE, "ZCode", "UserProfile");
+  return result;
+}
+function discoverZCodeInstall(options = {}) {
+  const env = options.env || process.env;
+  const platform = options.platform || process.platform;
+  const explicitRaw = asInstallDir(env.ZCODE_INSTALL_DIR);
+  const explicit = explicitRaw ? resolve(explicitRaw) : void 0;
+  if (explicit) {
+    return {
+      path: validInstall(explicit) ? explicit : void 0,
+      explicit,
+      candidates: [{ path: explicit, source: "ZCODE_INSTALL_DIR" }],
+      checked: [explicit]
+    };
+  }
+  const candidates = [];
+  const seen = /* @__PURE__ */ new Set();
+  const add = (value, source) => {
+    const path2 = asInstallDir(value);
+    if (!path2) return;
+    const normalized = resolve(path2);
+    const key = platform === "win32" ? normalized.toLowerCase() : normalized;
+    if (seen.has(key)) return;
+    seen.add(key);
+    candidates.push({ path: normalized, source });
+  };
+  for (const path2 of options.processPaths ?? runningProcessPaths(platform)) add(path2, "running-process");
+  for (const path2 of options.registryPaths ?? registeredInstallPaths(platform)) add(path2, "Windows-registry");
+  for (const path2 of options.pathPaths ?? pathExecutablePaths(platform)) add(path2, "PATH");
+  for (const path2 of options.shortcutPaths ?? shortcutTargetPaths(platform)) add(path2, "Start-menu-shortcut");
+  for (const candidate of standardPaths(env)) add(candidate.path, candidate.source);
+  const valid = candidates.filter((candidate) => validInstall(candidate.path));
+  if (!valid.length) return { candidates, checked: candidates.map((candidate) => candidate.path) };
+  if (options.readVersion && options.preferredVersion) {
+    for (const candidate of valid) {
+      try {
+        if (options.readVersion(candidate.path) === options.preferredVersion) {
+          return { path: candidate.path, candidates, checked: candidates.map((item) => item.path) };
+        }
+      } catch {
+      }
+    }
+  }
+  return { path: valid[0].path, candidates, checked: candidates.map((candidate) => candidate.path) };
+}
+function installationError(discovery) {
+  if (discovery.explicit) {
+    return `ZCODE_INSTALL_DIR points to an invalid ZCode installation: ${discovery.explicit}. The directory must contain ZCode.exe and resources\\app.asar.`;
+  }
+  const checked = discovery.checked.length ? ` Checked: ${discovery.checked.join("; ")}` : "";
+  return `Cannot find a ZCode installation automatically. Checked running processes, Windows registry entries, PATH, and common install directories.${checked} Set ZCODE_INSTALL_DIR only for a custom or portable installation.`;
+}
+
 // src/adapters/zcode-desktop/adapter.ts
 function installedVersion(install) {
-  const fd = openSync(join(install, "resources", "app.asar"), "r");
+  const fd = openSync(join2(install, "resources", "app.asar"), "r");
   try {
     const b = Buffer.alloc(16);
     readSync(fd, b, 0, 16, 0);
@@ -36745,18 +36894,28 @@ function installedVersion(install) {
   }
 }
 var ZCodeDesktopAdapter = class {
-  constructor(cdp = new CdpClient(), install = process.env.ZCODE_INSTALL_DIR || "C:\\Program Files\\ZCode") {
+  constructor(cdp = new CdpClient(), installOverride = process.env.ZCODE_INSTALL_DIR) {
     this.cdp = cdp;
-    this.install = install;
+    this.installOverride = installOverride;
   }
   cdp;
-  install;
+  installOverride;
+  cachedInstall;
   async health() {
     let version2;
+    const discovery = this.cachedInstall ? { path: this.cachedInstall, candidates: [{ path: this.cachedInstall, source: "cached" }], checked: [this.cachedInstall] } : discoverZCodeInstall({
+      ...this.installOverride ? { env: { ...process.env, ZCODE_INSTALL_DIR: this.installOverride } } : {},
+      readVersion: installedVersion,
+      preferredVersion: "3.12.1"
+    });
+    if (!discovery.path) throw new BridgeError("ZCODE_NOT_FOUND", installationError(discovery));
     try {
-      version2 = installedVersion(this.install);
-    } catch {
-      throw new BridgeError("ZCODE_NOT_FOUND", "Cannot read ZCode installation. Set ZCODE_INSTALL_DIR.");
+      version2 = installedVersion(discovery.path);
+      this.cachedInstall = discovery.path;
+    } catch (error62) {
+      this.cachedInstall = void 0;
+      const detail = error62 instanceof Error ? ` ${error62.message}` : "";
+      throw new BridgeError("ZCODE_NOT_FOUND", `ZCode was found at ${discovery.path}, but its installation could not be read.${detail}`);
     }
     if (version2 !== "3.12.1") throw new BridgeError("UNSUPPORTED_VERSION", `Desktop ${version2} has not been validated; this adapter supports 3.12.1.`);
     const ready = await this.cdp.evaluate(`(() => {const s=${lookupServices};return !!s.zcodeTaskService && !!s.zcodeAgentService;})()`);
@@ -36810,11 +36969,11 @@ var ZCodeDesktopAdapter = class {
 // src/storage/store.ts
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname as dirname2 } from "node:path";
 var TaskStore = class {
   db;
   constructor(path2) {
-    if (path2 !== ":memory:") mkdirSync(dirname(path2), { recursive: true });
+    if (path2 !== ":memory:") mkdirSync(dirname2(path2), { recursive: true });
     this.db = new DatabaseSync(path2);
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, request_id TEXT NOT NULL UNIQUE, workspace_key TEXT NOT NULL, status TEXT NOT NULL, body TEXT NOT NULL);
@@ -36913,7 +37072,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createHash as createHash2 } from "node:crypto";
 import { lstat, readFile, readlink, readdir, realpath } from "node:fs/promises";
-import { isAbsolute, join as join2, relative, resolve, sep } from "node:path";
+import { isAbsolute, join as join3, relative, resolve as resolve2, sep } from "node:path";
 var exec = promisify(execFile);
 async function workspacePath(path2) {
   if (!isAbsolute(path2)) throw new BridgeError("INVALID_WORKSPACE", "workspace_path must be absolute.");
@@ -36934,7 +37093,7 @@ async function files(path2) {
     async function visit2(dir) {
       for (const entry of await readdir(dir, { withFileTypes: true })) {
         if (skip.has(entry.name)) continue;
-        const full = join2(dir, entry.name);
+        const full = join3(dir, entry.name);
         if (entry.isDirectory()) await visit2(full);
         else result.push(relative(path2, full));
         if (result.length > 2e4) throw new BridgeError("BASELINE_TOO_LARGE", "More than 20,000 files. Use a Git workspace or narrower project directory.");
@@ -36949,7 +37108,7 @@ async function snapshotFiles(path2) {
   const names = await files(path2);
   if (names.length > 2e4) throw new BridgeError("BASELINE_TOO_LARGE", "More than 20,000 project files.");
   for (const name of names) {
-    const full = resolve(path2, name);
+    const full = resolve2(path2, name);
     if (!full.startsWith(path2 + sep)) throw new BridgeError("INVALID_FILE_PATH", "File escaped workspace.");
     try {
       const stat = await lstat(full);
@@ -37164,8 +37323,8 @@ ${text}`;
     for (; ; ) {
       const remaining = Math.max(0, until - Date.now());
       let timer;
-      const task = await Promise.race([this.get(id2), new Promise((resolve3) => {
-        timer = setTimeout(() => resolve3(publicTask(this.store.get(id2))), remaining);
+      const task = await Promise.race([this.get(id2), new Promise((resolve4) => {
+        timer = setTimeout(() => resolve4(publicTask(this.store.get(id2))), remaining);
       })]).finally(() => {
         if (timer) clearTimeout(timer);
       });
@@ -37290,8 +37449,8 @@ function createServer(manager) {
   return server;
 }
 async function main() {
-  const data = process.env.ZCODE_SUBAGENT_DATA_DIR || join3(process.env.LOCALAPPDATA || homedir(), "zcode-subagent");
-  const store = new TaskStore(join3(data, "tasks.sqlite"));
+  const data = process.env.ZCODE_SUBAGENT_DATA_DIR || join4(process.env.LOCALAPPDATA || homedir(), "zcode-subagent");
+  const store = new TaskStore(join4(data, "tasks.sqlite"));
   const manager = new TaskManager(store, new ZCodeDesktopAdapter());
   const server = createServer(manager);
   let closing = false;
@@ -37306,7 +37465,7 @@ async function main() {
   process.stdin.once("end", () => void close());
   await server.connect(new StdioServerTransport());
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve2(process.argv[1])).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve3(process.argv[1])).href) {
   main().catch((e) => {
     console.error(errorInfo(e));
     process.exitCode = 1;

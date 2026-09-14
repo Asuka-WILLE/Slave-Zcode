@@ -85,7 +85,7 @@ Codex 的插件配置由 .mcp.json 提供；其中 cwd: "." 要求服务从插�
 
 ## 启动桌面桥接
 
-为了让插件连接 Electron 的本机调试端口，必须先正常退出所有 ZCode 窗口和正在运行的 ZCode 任务。然后在源码或已安装插件根目录执行：
+为了让插件连接 Electron 的本机调试端口，必须先正常退出所有 ZCode 窗口和正在运行的 ZCode 任务。插件会自动检查正在运行的进程、Windows 卸载注册信息、`PATH`、开始菜单快捷方式以及常见的用户/系统目录。然后在源码或已安装插件根目录执行：
 
 ~~~
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-zcode.ps1
@@ -195,7 +195,7 @@ zcode_stop_task 只发送停止请求，不杀 ZCode 进程，也不回滚文件
 
 ### ZCODE_NOT_FOUND
 
-确认 C:\Program Files\ZCode\ZCode.exe 存在；自定义安装路径时设置：
+插件会优先从正在运行的 ZCode 进程和 Windows 注册信息取得安装根目录，再检查 `PATH`、开始菜单快捷方式以及 `C:\Program Files`、`%LOCALAPPDATA%\Programs` 等常见目录。普通安装不需要手动填写路径。自定义或便携版安装没有出现在这些来源中时，才设置：
 
 ~~~
 $env:ZCODE_INSTALL_DIR = 'D:\Apps\ZCode'

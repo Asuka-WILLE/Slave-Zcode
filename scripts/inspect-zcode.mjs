@@ -1,5 +1,8 @@
 import { openAsar } from './asar.mjs';
-const root = process.env.ZCODE_INSTALL_DIR || 'C:/Program Files/ZCode';
+import { discoverZCodeInstall, installationError } from './zcode-install.mjs';
+const discovery = discoverZCodeInstall();
+if (!discovery.path) throw new Error(installationError(discovery));
+const root = discovery.path;
 const archive = openAsar(`${root}/resources/app.asar`);
 try {
   const report = { package: JSON.parse(archive.read('package.json')).version, findings: [] };
