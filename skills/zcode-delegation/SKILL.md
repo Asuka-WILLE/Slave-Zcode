@@ -1,0 +1,19 @@
+---
+name: zcode-delegation
+description: Delegate substantial, independently verifiable local development tasks to the user's ZCode desktop through zcode MCP tools. Use automatically for suitable multi-step code reading, editing, testing or builds when this plugin is available and the parent can pause writes to that project; also use when the user explicitly asks to use ZCode. Skip trivial edits and tasks requiring unavailable context.
+---
+
+# ZCode delegation
+
+Use the local desktop as the executor and retain responsibility for acceptance. Follow the user's current instructions and project AGENTS.md. Do not delegate back recursively from a ZCode task.
+
+1. Call `zcode_health` and `zcode_list_tasks`. One nonterminal task reserves one workspace. Use the actual absolute project directory. Existing edits stay in place; pause parent writes, formatting and builds for this workspace until delegation ends. Read-only inspection is allowed.
+2. Call `zcode_list_models` when model choice is relevant. Select the user's requested provider and model from the returned catalog; never invent identifiers. Pass `model_selection` with `providerId`, `modelId` and optionally `options.reasoningLevel`. Omission snapshots the current ZCode preferred selection at creation. No API keys belong in prompts or plugin config. Do not silently switch providers after a failure.
+3. Give a concise assignment: goal, relevant files and evidence, allowed changes, existing work to preserve, acceptance commands, user constraints and existing delivery authorization. Use `zcode_start_task` with a stable unique `request_id`. An uncertain response never warrants a new request ID or replacement task.
+4. Use `zcode_wait_task` with the previous cursor (default 25 seconds, maximum 30). A wait timeout does not stop execution. Summarize useful progress to the user. `unknown` means inspect/reconnect; do not resend. `zcode_list_tasks` is cached; get/wait refresh the desktop.
+5. For `waiting_for_input`, inspect every `pending_permissions` entry including the complete tool input. If the exact action is within existing user authorization, resolve it with `zcode_resolve_permission` using its request ID and fingerprint. This is a single-use approval. Do not approve blindly, create global permission rules, or infer authorization to commit/push/deploy or delete unrelated data. Ask the user only when their authorization is actually missing. Other native questions remain in ZCode.
+6. If `control_owner` becomes `user`, observe only. Viewing a task alone does not transfer control. Only pass `take_control: true` after the user explicitly returns control. The initial adapter detects foreign messages, mode changes and observed stops; changes made and reverted between polls may not be detected.
+7. Append feedback through `zcode_send_message` once the current turn has ended. Running-turn steering is not supported in this version. Reuse its request ID on retries; unresolved sends are never replayed. To stop, use `zcode_stop_task` then read until inactive; never kill the desktop process. Stopping does not roll back edits.
+8. Inspect returned file changes and execution evidence against acceptance criteria. `completed` means the turn ended, not necessarily that the user's objective succeeded. Existing file baselines help identify changes but cannot prove which external editor made them. Reuse trustworthy test evidence; run additional checks only for missing evidence, failures or later changes. Continue the original desktop task for corrections. Report actual evidence and remaining limitations.
+
+Requires Windows, Node.js 24+, ZCode 3.12.1 with the local debugging launcher. Use `scripts/start-zcode.ps1` only after the user has normally closed ZCode; do not interrupt existing work or restart automatically. Run `npm run doctor` from source for diagnosis. See `README.md` and `docs/verification.md` in the plugin root for setup and verified boundaries.

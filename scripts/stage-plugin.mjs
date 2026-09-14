@@ -1,0 +1,10 @@
+import {cp,mkdir} from 'node:fs/promises';
+import {resolve,join} from 'node:path';
+import {homedir} from 'node:os';
+const target=resolve(homedir(),'plugins','zcode-subagent');
+const source=resolve('.');if(source===target)throw Error('Run from the source checkout');
+await mkdir(target,{recursive:true});
+for(const name of ['.codex-plugin','.mcp.json','skills','bundle','docs','README.md','LICENSE','CONTRIBUTING.md','SECURITY.md','CHANGELOG.md','CODE_OF_CONDUCT.md','package.json','package-lock.json'])await cp(join(source,name),join(target,name),{recursive:true});
+await mkdir(join(target,'scripts'),{recursive:true});
+for(const name of ['start-zcode.ps1','doctor.mjs','asar.mjs'])await cp(join(source,'scripts',name),join(target,'scripts',name));
+console.log(target);

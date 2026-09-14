@@ -1,0 +1,38 @@
+{
+  "name": "zcode-subagent",
+  "version": "0.1.0",
+  "description": "Open-source Codex plugin that delegates development tasks to a visible local ZCode desktop.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Asuka-WILLE/Slave-Zcode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Asuka-WILLE/Slave-Zcode/issues"
+  },
+  "homepage": "https://github.com/Asuka-WILLE/Slave-Zcode",
+  "keywords": ["codex", "plugin", "mcp", "zcode", "agent", "windows"],
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "doctor": "node scripts/doctor.mjs",
+    "inspect": "node scripts/inspect-zcode.mjs",
+    "start": "node dist/src/mcp/server.js",
+    "bundle": "npm run build && node scripts/bundle.mjs",
+    "verify:mcp": "node scripts/verify-mcp.mjs",
+    "check": "node scripts/check-plugin.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.6.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

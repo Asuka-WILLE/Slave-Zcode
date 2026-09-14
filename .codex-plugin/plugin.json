@@ -1,0 +1,19 @@
+{
+  "name": "zcode-subagent",
+  "version": "0.1.0",
+  "description": "Delegate local development to visible ZCode desktop tasks with model selection, recovery and result review.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ZCode Subagent",
+    "shortDescription": "Delegate development to your ZCode desktop.",
+    "longDescription": "Local Windows ZCode 3.12.1 task bridge with per-task models, progress, permission review, stop and result collection.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Use ZCode to complete this development task and review the result."
+  },
+  "mcpServers": "./.mcp.json"
+}
