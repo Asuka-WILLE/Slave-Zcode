@@ -2,6 +2,7 @@
   "name": "zcode-subagent",
   "version": "0.1.0",
   "description": "Open-source Codex plugin that delegates development tasks to a visible local ZCode desktop.",
+  "author": "Asuka-WILLE",
   "license": "MIT",
   "repository": {
     "type": "git",

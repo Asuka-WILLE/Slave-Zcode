@@ -26,7 +26,7 @@
 - 桌面关闭时的连接错误路径有实现，未为了测试而关闭用户正在使用的窗口。
 - 只支持已验证桌面版本。文件变化不能归属同时编辑的其他进程。
 - 安装后需新建 Codex 对话确认 Skill 与 MCP 的实际发现；已有对话不会自动获得新工具。
-- 仓库根目录的 `slave-zcode` 市场清单已通过本机 `codex plugin marketplace add` 与 `codex plugin add zcode-subagent@slave-zcode` 验证；GitHub 空仓库尚未在本记录生成提交前验证远端安装。
+- 仓库根目录的 `slave-zcode` 市场清单已通过本机 `codex plugin marketplace add` 与 `codex plugin add zcode-subagent@slave-zcode` 验证；推送后通过 GitHub raw 地址确认 `README.md`、`.codex-plugin/plugin.json`、`.agents/plugins/marketplace.json` 和 `package.json` 可读取。尚未在远端仓库缓存上重复执行插件安装，远端安装仍应由使用者在目标 Codex 环境中确认。
 
 ## 桌面接口备忘
 
