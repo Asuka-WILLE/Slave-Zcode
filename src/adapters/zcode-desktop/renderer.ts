@@ -1,4 +1,4 @@
-// Version-specific runtime lookup. No application archive or persistent renderer code is changed.
+// Runtime lookup through the observed renderer services. No application archive or persistent renderer code is changed.
 // React's App component receives the actual service proxies as its `services` prop.
 export const lookupServices = `(() => {
   const root = document.getElementById('root');
@@ -16,6 +16,49 @@ export const lookupServices = `(() => {
     queue.push(node.child, node.sibling);
   }
   throw new Error('ZCODE_SERVICES_UNAVAILABLE: desktop services not found');
+})()`;
+
+// This is a capability probe, not an application-version check. It reports the
+// services and methods used by the adapter without creating a task or session.
+export const interfaceHealthExpression = `(() => {
+  const required = {
+    zcodeTaskService: ['createTask', 'renameTask'],
+    zcodeSessionService: ['readSession'],
+    modelSelectionService: ['getView'],
+    zcodeAgentService: ['helloConversationV4', 'initializeConversationV4', 'sendConversationCommandV4']
+  };
+  const root = document.getElementById('root');
+  const key = root && Object.keys(root).find(k => k.startsWith('__reactContainer$'));
+  const container = key ? root[key] : undefined;
+  const queue = [container?.stateNode?.current || container];
+  const seen = new Set();
+  let services;
+  while (queue.length && seen.size < 30000) {
+    const node = queue.pop();
+    if (!node || seen.has(node)) continue;
+    seen.add(node);
+    const candidate = node.memoizedProps?.services;
+    if (candidate && typeof candidate === 'object' && Object.keys(required).some(name => candidate[name])) {
+      services = candidate;
+      break;
+    }
+    queue.push(node.child, node.sibling);
+  }
+  if (!services) return { availableServices: [], missing: ['React services root'] };
+  const missing = [];
+  for (const [service, methods] of Object.entries(required)) {
+    if (!services[service] || typeof services[service] !== 'object') {
+      missing.push(service);
+      continue;
+    }
+    for (const method of methods) {
+      if (typeof services[service][method] !== 'function') missing.push(service + '.' + method);
+    }
+  }
+  return {
+    availableServices: Object.keys(services).filter(name => typeof services[name] === 'object'),
+    missing
+  };
 })()`;
 
 // Reuse the same workspace-opening callback as the desktop UI. Merely creating a

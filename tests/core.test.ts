@@ -7,7 +7,8 @@ import { TaskStore } from '../src/storage/store.js';
 import { TaskManager } from '../src/tasks/manager.js';
 import { projectSnapshot } from '../src/adapters/zcode-desktop/project.js';
 import { localEndpoint } from '../src/adapters/zcode-desktop/cdp.js';
-import { serviceExpression } from '../src/adapters/zcode-desktop/renderer.js';
+import { interfaceHealthExpression, serviceExpression } from '../src/adapters/zcode-desktop/renderer.js';
+import { ZCodeDesktopAdapter } from '../src/adapters/zcode-desktop/adapter.js';
 import { changedFiles, snapshotFiles } from '../src/results/files.js';
 import { discoverZCodeInstall, installationError } from '../src/adapters/zcode-desktop/install.js';
 import type { DesktopAdapter, Observation, StoredTask } from '../src/types.js';
@@ -154,7 +155,7 @@ test('ZCode installation discovery honors an explicit override and validates its
  assert.equal(missing.path,undefined); assert.match(installationError(missing),/ZCODE_INSTALL_DIR/);
 });
 
-test('ZCode installation discovery uses registry and PATH candidates and prefers the supported version',async t=>{
+test('ZCode installation discovery keeps candidate order regardless of application version',async t=>{
  const root=await mkdtemp(join(tmpdir(),'zcode install candidates '));
  t.after(()=>rm(root,{recursive:true,force:true}));
  const unsupported=join(root,'registered'); const supported=join(root,'portable');
@@ -165,13 +166,12 @@ test('ZCode installation discovery uses registry and PATH candidates and prefers
  const result=discoverZCodeInstall({
    platform:'win32', env:{},
    processPaths:[],
-   registryPaths:[`"${join(unsupported,'Uninstall ZCode.exe')}" /allusers`],
-   pathPaths:[join(supported,'ZCode.exe')],
-   shortcutPaths:[],
-   readVersion:path=>path===resolve(supported)?'3.12.1':'3.11.0', preferredVersion:'3.12.1',
- });
- assert.equal(result.path,resolve(supported));
- assert.deepEqual(result.candidates.map(item=>item.source),['Windows-registry','PATH']);
+  registryPaths:[`"${join(unsupported,'Uninstall ZCode.exe')}" /allusers`],
+  pathPaths:[join(supported,'ZCode.exe')],
+  shortcutPaths:[],
+  });
+  assert.equal(result.path,resolve(unsupported));
+  assert.deepEqual(result.candidates.map(item=>item.source),['Windows-registry','PATH']);
 });
 
 test('ZCode installation discovery reports the checked scope when no candidate exists',()=>{
@@ -187,5 +187,64 @@ test('ZCode installation discovery accepts a custom Start-menu shortcut target',
  await mkdir(join(install,'resources'),{recursive:true});
  await writeFile(join(install,'ZCode.exe'),''); await writeFile(join(install,'resources','app.asar'),'');
  const result=discoverZCodeInstall({platform:'win32',env:{},processPaths:[],registryPaths:[],pathPaths:[],shortcutPaths:[join(install,'ZCode.exe')]});
- assert.equal(result.path,resolve(install)); assert.equal(result.candidates[0]?.source,'Start-menu-shortcut');
+  assert.equal(result.path,resolve(install)); assert.equal(result.candidates[0]?.source,'Start-menu-shortcut');
+});
+
+async function writeAsarPackage(path: string, version: string) {
+  const packageData = Buffer.from(JSON.stringify({ version }));
+  const header = Buffer.from(JSON.stringify({ files: { 'package.json': { size: packageData.length, offset: '0' } } }));
+  const prefix = Buffer.alloc(16);
+  prefix.writeUInt32LE(header.length + 8, 4);
+  prefix.writeUInt32LE(header.length, 12);
+  await writeFile(path, Buffer.concat([prefix, header, packageData]));
+}
+
+function healthCdp(report: unknown) {
+  return {
+    expressions: [] as string[],
+    async evaluate(expression: string) { this.expressions.push(expression); return report; },
+    close() {},
+  };
+}
+
+async function makeInstall(t: any, version?: string) {
+  const root = await mkdtemp(join(tmpdir(), 'zcode health install '));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const install = join(root, 'zcode');
+  await mkdir(join(install, 'resources'), { recursive: true });
+  await writeFile(join(install, 'ZCode.exe'), '');
+  const archive = join(install, 'resources', 'app.asar');
+  if (version) await writeAsarPackage(archive, version); else await writeFile(archive, '');
+  return install;
+}
+
+test('health accepts ZCode 3.11.2 when the required interface is complete', async t => {
+  const install = await makeInstall(t, '3.11.2');
+  const cdp = healthCdp({ availableServices: ['zcodeTaskService', 'zcodeSessionService', 'modelSelectionService', 'zcodeAgentService'], missing: [] });
+  const adapter = new ZCodeDesktopAdapter(cdp as any, install);
+  const result = await adapter.health();
+  assert.equal(result.connected, true);
+  assert.equal(result.desktop_version, '3.11.2');
+  assert.equal(result.adapter, 'desktop-cdp');
+  assert.equal(cdp.expressions.length, 1);
+  assert.ok(cdp.expressions[0]?.includes(interfaceHealthExpression));
+});
+
+test('health continues when application version metadata cannot be read', async t => {
+  const install = await makeInstall(t);
+  const cdp = healthCdp({ availableServices: ['all'], missing: [] });
+  const adapter = new ZCodeDesktopAdapter(cdp as any, install);
+  const result = await adapter.health();
+  assert.equal(result.connected, true);
+  assert.equal(result.desktop_version, null);
+});
+
+test('health reports missing desktop methods without creating a task', async t => {
+  const install = await makeInstall(t, '3.11.2');
+  const cdp = healthCdp({ availableServices: ['zcodeTaskService'], missing: ['modelSelectionService.getView', 'zcodeAgentService.sendConversationCommandV4'] });
+  const adapter = new ZCodeDesktopAdapter(cdp as any, install);
+  await assert.rejects(adapter.health(), (error: any) => error?.code === 'DESKTOP_INTERFACE_UNAVAILABLE'
+    && /modelSelectionService\.getView/.test(error.message)
+    && /zcodeAgentService\.sendConversationCommandV4/.test(error.message));
+  assert.equal(cdp.expressions.length, 1);
 });

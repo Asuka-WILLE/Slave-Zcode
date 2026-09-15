@@ -3,46 +3,58 @@ import { join } from 'node:path';
 import { BridgeError } from '../../errors.js';
 import type { DesktopAdapter, StoredTask } from '../../types.js';
 import { CdpClient } from './cdp.js';
-import { lookupServices, openWorkspaceExpression, serviceExpression } from './renderer.js';
+import { interfaceHealthExpression, lookupServices, openWorkspaceExpression, serviceExpression } from './renderer.js';
 import { projectSnapshot } from './project.js';
 import { discoverZCodeInstall, installationError } from './install.js';
 
-function installedVersion(install: string): string {
-  const fd = openSync(join(install, 'resources', 'app.asar'), 'r');
+function installedVersion(install: string): string | null {
+  let fd: number | undefined;
   try {
+    fd = openSync(join(install, 'resources', 'app.asar'), 'r');
     const b = Buffer.alloc(16); readSync(fd, b, 0, 16, 0);
     const size = b.readUInt32LE(12);
     if (size > 64 * 1024 * 1024) throw new Error('Invalid archive header');
     const h = Buffer.alloc(size); readSync(fd, h, 0, size, 16);
-    const value = JSON.parse(h.toString()).files['package.json'];
+    const value = JSON.parse(h.toString()).files?.['package.json'];
     if (!value || value.unpacked || value.size > 1024 * 1024) throw new Error('Unexpected package metadata');
     const data = Buffer.alloc(value.size);
     readSync(fd, data, 0, data.length, 8 + b.readUInt32LE(4) + Number(value.offset));
-    return JSON.parse(data.toString()).version;
-  } finally { closeSync(fd); }
+    const version = JSON.parse(data.toString()).version;
+    return typeof version === 'string' ? version : null;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
 }
+interface InterfaceHealthReport { availableServices?: unknown; missing?: unknown; }
+const stringList = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 export class ZCodeDesktopAdapter implements DesktopAdapter {
   private cachedInstall?: string;
   constructor(readonly cdp = new CdpClient(), readonly installOverride = process.env.ZCODE_INSTALL_DIR) {}
   async health() {
-    let version: string;
+    let version: string | null = null;
     const discovery = this.cachedInstall
       ? { path: this.cachedInstall, candidates: [{ path: this.cachedInstall, source: 'cached' }], checked: [this.cachedInstall] }
       : discoverZCodeInstall({
           ...(this.installOverride ? { env: { ...process.env, ZCODE_INSTALL_DIR: this.installOverride } } : {}),
-          readVersion: installedVersion,
-          preferredVersion: '3.12.1',
         });
     if (!discovery.path) throw new BridgeError('ZCODE_NOT_FOUND', installationError(discovery));
-    try { version = installedVersion(discovery.path); this.cachedInstall = discovery.path; }
-    catch (error) {
-      this.cachedInstall = undefined;
-      const detail = error instanceof Error ? ` ${error.message}` : '';
-      throw new BridgeError('ZCODE_NOT_FOUND', `ZCode was found at ${discovery.path}, but its installation could not be read.${detail}`);
+    this.cachedInstall = discovery.path;
+    version = installedVersion(discovery.path);
+    let report: InterfaceHealthReport;
+    try {
+      report = await this.cdp.evaluate<InterfaceHealthReport>(interfaceHealthExpression);
+    } catch (error) {
+      if (error instanceof BridgeError && error.code === 'DESKTOP_CALL_FAILED') {
+        throw new BridgeError('DESKTOP_INTERFACE_UNAVAILABLE', `Unable to inspect ZCode desktop services. ${error.message}`);
+      }
+      throw error;
     }
-    if (version !== '3.12.1') throw new BridgeError('UNSUPPORTED_VERSION', `Desktop ${version} has not been validated; this adapter supports 3.12.1.`);
-    const ready = await this.cdp.evaluate<boolean>(`(() => {const s=${lookupServices};return !!s.zcodeTaskService && !!s.zcodeAgentService;})()`);
-    return { connected: ready, desktop_version: version, adapter: 'desktop-3.12.1', transport: 'local-cdp', permission_mode: 'build', model: 'inherited from ZCode', automatic_permission_approval: false };
+    const missing = stringList(report?.missing);
+    if (!Array.isArray(report?.missing)) missing.push('health report');
+    if (missing.length) throw new BridgeError('DESKTOP_INTERFACE_UNAVAILABLE', `ZCode desktop services are missing: ${missing.join(', ')}`);
+    return { connected: true, desktop_version: version, adapter: 'desktop-cdp', transport: 'local-cdp', permission_mode: 'build', model: 'inherited from ZCode', available_services: stringList(report.availableServices), automatic_permission_approval: false };
   }
   async listModels() {
     return this.cdp.evaluate<any>(`(async()=>{const v=await (${lookupServices}).modelSelectionService.getView();return {providers:v.providers.map(p=>({provider_id:p.providerId,name:p.providerName,models:p.models.map(m=>({model_id:m.modelId,reasoning_levels:m.config?.optionSpecs?.reasoningLevel?.values || []}))})),preferred_selection:v.preferredSelection?{providerId:v.preferredSelection.providerId,modelId:v.preferredSelection.modelId,options:{reasoningLevel:v.preferredSelection.options?.reasoningLevel}}:null};})()`);

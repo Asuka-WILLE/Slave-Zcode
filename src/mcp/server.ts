@@ -25,7 +25,7 @@ export function createServer(manager: TaskManager) {
   };
   const read = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
   const write = { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: true };
-  server.registerTool('zcode_health', { description: 'Check local ZCode desktop connection and supported version. Never starts a model task.', inputSchema: {}, annotations: read }, () => run(() => manager.adapter.health()));
+  server.registerTool('zcode_health', { description: 'Check local ZCode desktop connection and required runtime interface. Never starts a model task.', inputSchema: {}, annotations: read }, () => run(() => manager.adapter.health()));
   server.registerTool('zcode_list_models', { description: 'List configured ZCode provider names and model IDs without credentials. Selection is per task and does not change global defaults.', inputSchema: {}, annotations: read }, () => run(() => manager.adapter.listModels?.()));
   server.registerTool('zcode_start_task', {
     description: 'Delegate an authorized development task to the local ZCode desktop. The task edits the CURRENT project, including existing changes. Pause parent writes to this project. Returns immediately; use wait/get. Reuse request_id only for an identical request.',

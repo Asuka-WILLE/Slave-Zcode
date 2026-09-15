@@ -36636,6 +36636,46 @@ var lookupServices = `(() => {
   }
   throw new Error('ZCODE_SERVICES_UNAVAILABLE: desktop services not found');
 })()`;
+var interfaceHealthExpression = `(() => {
+  const required = {
+    zcodeTaskService: ['createTask', 'renameTask'],
+    zcodeSessionService: ['readSession'],
+    modelSelectionService: ['getView'],
+    zcodeAgentService: ['helloConversationV4', 'initializeConversationV4', 'sendConversationCommandV4']
+  };
+  const root = document.getElementById('root');
+  const key = root && Object.keys(root).find(k => k.startsWith('__reactContainer$'));
+  const container = key ? root[key] : undefined;
+  const queue = [container?.stateNode?.current || container];
+  const seen = new Set();
+  let services;
+  while (queue.length && seen.size < 30000) {
+    const node = queue.pop();
+    if (!node || seen.has(node)) continue;
+    seen.add(node);
+    const candidate = node.memoizedProps?.services;
+    if (candidate && typeof candidate === 'object' && Object.keys(required).some(name => candidate[name])) {
+      services = candidate;
+      break;
+    }
+    queue.push(node.child, node.sibling);
+  }
+  if (!services) return { availableServices: [], missing: ['React services root'] };
+  const missing = [];
+  for (const [service, methods] of Object.entries(required)) {
+    if (!services[service] || typeof services[service] !== 'object') {
+      missing.push(service);
+      continue;
+    }
+    for (const method of methods) {
+      if (typeof services[service][method] !== 'function') missing.push(service + '.' + method);
+    }
+  }
+  return {
+    availableServices: Object.keys(services).filter(name => typeof services[name] === 'object'),
+    missing
+  };
+})()`;
 function openWorkspaceExpression(path2) {
   return `(async () => {
     const root = document.getElementById('root');
@@ -36854,16 +36894,6 @@ function discoverZCodeInstall(options = {}) {
   for (const candidate of standardPaths(env)) add(candidate.path, candidate.source);
   const valid = candidates.filter((candidate) => validInstall(candidate.path));
   if (!valid.length) return { candidates, checked: candidates.map((candidate) => candidate.path) };
-  if (options.readVersion && options.preferredVersion) {
-    for (const candidate of valid) {
-      try {
-        if (options.readVersion(candidate.path) === options.preferredVersion) {
-          return { path: candidate.path, candidates, checked: candidates.map((item) => item.path) };
-        }
-      } catch {
-      }
-    }
-  }
   return { path: valid[0].path, candidates, checked: candidates.map((candidate) => candidate.path) };
 }
 function installationError(discovery) {
@@ -36876,23 +36906,28 @@ function installationError(discovery) {
 
 // src/adapters/zcode-desktop/adapter.ts
 function installedVersion(install) {
-  const fd = openSync(join2(install, "resources", "app.asar"), "r");
+  let fd;
   try {
+    fd = openSync(join2(install, "resources", "app.asar"), "r");
     const b = Buffer.alloc(16);
     readSync(fd, b, 0, 16, 0);
     const size = b.readUInt32LE(12);
     if (size > 64 * 1024 * 1024) throw new Error("Invalid archive header");
     const h = Buffer.alloc(size);
     readSync(fd, h, 0, size, 16);
-    const value = JSON.parse(h.toString()).files["package.json"];
+    const value = JSON.parse(h.toString()).files?.["package.json"];
     if (!value || value.unpacked || value.size > 1024 * 1024) throw new Error("Unexpected package metadata");
     const data = Buffer.alloc(value.size);
     readSync(fd, data, 0, data.length, 8 + b.readUInt32LE(4) + Number(value.offset));
-    return JSON.parse(data.toString()).version;
+    const version2 = JSON.parse(data.toString()).version;
+    return typeof version2 === "string" ? version2 : null;
+  } catch {
+    return null;
   } finally {
-    closeSync(fd);
+    if (fd !== void 0) closeSync(fd);
   }
 }
+var stringList = (value) => Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
 var ZCodeDesktopAdapter = class {
   constructor(cdp = new CdpClient(), installOverride = process.env.ZCODE_INSTALL_DIR) {
     this.cdp = cdp;
@@ -36902,24 +36937,26 @@ var ZCodeDesktopAdapter = class {
   installOverride;
   cachedInstall;
   async health() {
-    let version2;
+    let version2 = null;
     const discovery = this.cachedInstall ? { path: this.cachedInstall, candidates: [{ path: this.cachedInstall, source: "cached" }], checked: [this.cachedInstall] } : discoverZCodeInstall({
-      ...this.installOverride ? { env: { ...process.env, ZCODE_INSTALL_DIR: this.installOverride } } : {},
-      readVersion: installedVersion,
-      preferredVersion: "3.12.1"
+      ...this.installOverride ? { env: { ...process.env, ZCODE_INSTALL_DIR: this.installOverride } } : {}
     });
     if (!discovery.path) throw new BridgeError("ZCODE_NOT_FOUND", installationError(discovery));
+    this.cachedInstall = discovery.path;
+    version2 = installedVersion(discovery.path);
+    let report;
     try {
-      version2 = installedVersion(discovery.path);
-      this.cachedInstall = discovery.path;
+      report = await this.cdp.evaluate(interfaceHealthExpression);
     } catch (error62) {
-      this.cachedInstall = void 0;
-      const detail = error62 instanceof Error ? ` ${error62.message}` : "";
-      throw new BridgeError("ZCODE_NOT_FOUND", `ZCode was found at ${discovery.path}, but its installation could not be read.${detail}`);
+      if (error62 instanceof BridgeError && error62.code === "DESKTOP_CALL_FAILED") {
+        throw new BridgeError("DESKTOP_INTERFACE_UNAVAILABLE", `Unable to inspect ZCode desktop services. ${error62.message}`);
+      }
+      throw error62;
     }
-    if (version2 !== "3.12.1") throw new BridgeError("UNSUPPORTED_VERSION", `Desktop ${version2} has not been validated; this adapter supports 3.12.1.`);
-    const ready = await this.cdp.evaluate(`(() => {const s=${lookupServices};return !!s.zcodeTaskService && !!s.zcodeAgentService;})()`);
-    return { connected: ready, desktop_version: version2, adapter: "desktop-3.12.1", transport: "local-cdp", permission_mode: "build", model: "inherited from ZCode", automatic_permission_approval: false };
+    const missing = stringList(report?.missing);
+    if (!Array.isArray(report?.missing)) missing.push("health report");
+    if (missing.length) throw new BridgeError("DESKTOP_INTERFACE_UNAVAILABLE", `ZCode desktop services are missing: ${missing.join(", ")}`);
+    return { connected: true, desktop_version: version2, adapter: "desktop-cdp", transport: "local-cdp", permission_mode: "build", model: "inherited from ZCode", available_services: stringList(report.availableServices), automatic_permission_approval: false };
   }
   async listModels() {
     return this.cdp.evaluate(`(async()=>{const v=await (${lookupServices}).modelSelectionService.getView();return {providers:v.providers.map(p=>({provider_id:p.providerId,name:p.providerName,models:p.models.map(m=>({model_id:m.modelId,reasoning_levels:m.config?.optionSpecs?.reasoningLevel?.values || []}))})),preferred_selection:v.preferredSelection?{providerId:v.preferredSelection.providerId,modelId:v.preferredSelection.modelId,options:{reasoningLevel:v.preferredSelection.options?.reasoningLevel}}:null};})()`);
@@ -37433,7 +37470,7 @@ function createServer(manager) {
   };
   const read = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
   const write = { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: true };
-  server.registerTool("zcode_health", { description: "Check local ZCode desktop connection and supported version. Never starts a model task.", inputSchema: {}, annotations: read }, () => run(() => manager.adapter.health()));
+  server.registerTool("zcode_health", { description: "Check local ZCode desktop connection and required runtime interface. Never starts a model task.", inputSchema: {}, annotations: read }, () => run(() => manager.adapter.health()));
   server.registerTool("zcode_list_models", { description: "List configured ZCode provider names and model IDs without credentials. Selection is per task and does not change global defaults.", inputSchema: {}, annotations: read }, () => run(() => manager.adapter.listModels?.()));
   server.registerTool("zcode_start_task", {
     description: "Delegate an authorized development task to the local ZCode desktop. The task edits the CURRENT project, including existing changes. Pause parent writes to this project. Returns immediately; use wait/get. Reuse request_id only for an identical request.",

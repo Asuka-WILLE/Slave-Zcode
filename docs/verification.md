@@ -1,6 +1,6 @@
 # 验证记录（2026-09-14）
 
-环境：Windows；ZCode 3.12.1；内置 CLI 0.16.5；Node.js 24.14.1。
+历史回归环境：Windows；ZCode 3.12.1；内置 CLI 0.16.5；Node.js 24.14.1。
 
 ## 已实测
 
@@ -24,7 +24,7 @@
 - 人工在桌面点击追加、切换设置与停止的完整流程尚未由用户实测；控制权规则目前有协议字段证据和自动化测试。
 - 当前支持轮结束后续接，运行中追加、自动任务期限和完整事件流订阅待后续版本。
 - 桌面关闭时的连接错误路径有实现，未为了测试而关闭用户正在使用的窗口。
-- 只支持已验证桌面版本。文件变化不能归属同时编辑的其他进程。
+- 适配器按运行时接口和消息协议判断是否可调用；3.12.1 只是本记录的历史回归环境。文件变化不能归属同时编辑的其他进程。
 - 安装后需新建 Codex 对话确认 Skill 与 MCP 的实际发现；已有对话不会自动获得新工具。
 - 插件启动脚本会自动发现 ZCode 安装根目录；解析顺序为正在运行的进程、Windows 卸载注册信息、`PATH`、开始菜单快捷方式和常见用户/系统目录。自定义或便携版安装仍可通过 `ZCODE_INSTALL_DIR` 或 `-InstallDir` 指定。`stage-plugin.mjs` 会把解析器与诊断脚本一起复制到安装目录。
 - 仓库根目录的 `slave-zcode` 市场清单已通过本机 `codex plugin marketplace add` 与 `codex plugin add zcode-subagent@slave-zcode` 验证；推送后通过 GitHub raw 地址确认 `README.md`、`.codex-plugin/plugin.json`、`.agents/plugins/marketplace.json` 和 `package.json` 可读取。尚未在远端仓库缓存上重复执行插件安装，远端安装仍应由使用者在目标 Codex 环境中确认。

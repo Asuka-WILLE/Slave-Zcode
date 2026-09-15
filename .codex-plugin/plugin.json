@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "ZCode Subagent",
     "shortDescription": "Delegate development to your ZCode desktop.",
-    "longDescription": "Local Windows ZCode 3.12.1 task bridge with per-task models, progress, permission review, stop and result collection.",
+    "longDescription": "Local Windows ZCode desktop task bridge with runtime interface checks, per-task models, progress, permission review, stop and result collection.",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [],

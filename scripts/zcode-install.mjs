@@ -2,7 +2,6 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { openAsar } from './asar.mjs';
 
 const executableName = 'ZCode.exe';
 
@@ -30,15 +29,6 @@ function asInstallDir(value) {
 
 function validInstall(path) {
   return existsSync(join(path, executableName)) && existsSync(join(path, 'resources', 'app.asar'));
-}
-
-function installedVersion(path) {
-  const archive = openAsar(join(path, 'resources', 'app.asar'));
-  try {
-    return JSON.parse(archive.read('package.json')).version;
-  } finally {
-    archive.close();
-  }
 }
 
 function commandLines(command, args, timeout) {
@@ -142,10 +132,7 @@ export function discoverZCodeInstall({ env = process.env, platform = process.pla
   for (const path of shortcutTargetPaths(platform)) add(path, 'Start-menu-shortcut');
   for (const candidate of standardPaths(env)) add(candidate.path, candidate.source);
   const valid = candidates.filter(candidate => validInstall(candidate.path));
-  const preferred = valid.find(candidate => {
-    try { return installedVersion(candidate.path) === '3.12.1'; } catch { return false; }
-  });
-  return { path: (preferred || valid[0])?.path, candidates, checked: candidates.map(candidate => candidate.path) };
+  return { path: valid[0]?.path, candidates, checked: candidates.map(candidate => candidate.path) };
 }
 
 export function installationError(discovery) {

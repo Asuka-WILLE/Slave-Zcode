@@ -4,7 +4,7 @@
 
 仓库地址：<https://github.com/Asuka-WILLE/Slave-Zcode>
 
-当前版本：0.1.0。已验证的桌面基线是 ZCode 3.12.1、Node.js 24+。其他 ZCode 版本会被适配器拒绝，避免把未经核对的内部协议当成兼容行为。
+当前版本：0.1.0。适配器不把 ZCode 应用版本作为运行门槛，而是检查实际调用所需的桌面接口和消息协议。ZCode 3.12.1 是当前已完成回归的历史环境，其他版本仍需通过目标机器上的接口检查。
 
 ## 目录
 
@@ -26,7 +26,7 @@
 
 直接让两个桌面代理同时修改同一个目录，容易产生重复任务、覆盖和无法确认的结果。这个插件把一次委派建模成一个持久化任务：
 
-1. 插件检查 ZCode 连接、版本和项目占用。
+1. 插件检查 ZCode 连接、实际桌面接口和项目占用。
 2. 插件记录任务前的文件基线，并使用稳定 request_id 去重。
 3. ZCode 创建真正的桌面会话，任务在 ZCode 界面可见。
 4. Codex 通过游标读取状态、摘要、权限请求、最终回复、命令输出和文件变化。
@@ -39,7 +39,7 @@
 需要：
 
 - Windows 10/11；
-- ZCode 3.12.1，已在其中配置好 Coding Plan 或第三方 API；
+- ZCode 桌面，已在其中配置好 Coding Plan 或第三方 API；
 - Node.js 24 或更高版本；
 - 支持 `plugin marketplace`、`plugin add` 和 `plugin list` 的 Codex CLI；只安装桌面 App 不一定会把 CLI 命令加入外部 PowerShell 的 `PATH`；
 - 项目目录的绝对路径。
@@ -100,7 +100,7 @@ npm run doctor
 $env:ZCODE_TARGET_ID = '从 doctor 或 /json/list 得到的 page ID'
 ~~~
 
-诊断输出中的 desktop_connected: true、安装版本 3.12.1 和 renderer page 才表示桥接入口可用。它不表示模型已登录、任务一定能执行或项目已通过测试。
+诊断输出中的 desktop_connected: true、renderer page，以及 zcode_health 返回 connected: true 才表示桥接入口和已检查的桌面接口可用。它不表示模型已登录、任务一定能执行或项目已通过测试。
 
 ## 第一次任务
 
@@ -174,7 +174,7 @@ zcode_stop_task 只发送停止请求，不杀 ZCode 进程，也不回滚文件
 | zcode_stop_task | task_id | 请求停止并等待确认 |
 | zcode_list_tasks | 可选 workspace_path | 列出插件数据库中的任务缓存 |
 
-所有工具返回结构化 JSON。错误对象包含 code、message 和 retryable。常见错误包括 ZCODE_NOT_FOUND、DESKTOP_UNAVAILABLE、UNSUPPORTED_VERSION、WORKSPACE_BUSY、USER_CONTROL、OUTCOME_UNKNOWN、ZCODE_AUTH_REQUIRED 和 ZCODE_EXECUTION_FAILED。
+所有工具返回结构化 JSON。错误对象包含 code、message 和 retryable。常见错误包括 ZCODE_NOT_FOUND、DESKTOP_UNAVAILABLE、DESKTOP_INTERFACE_UNAVAILABLE、WORKSPACE_BUSY、USER_CONTROL、OUTCOME_UNKNOWN、ZCODE_AUTH_REQUIRED 和 ZCODE_EXECUTION_FAILED。
 
 ## 任务状态和恢复
 
@@ -248,9 +248,9 @@ codex plugin list
 
 正常关闭 ZCode 后重新运行 scripts/start-zcode.ps1。如果有多个 renderer page，用 npm run doctor 输出的 page ID 设置 ZCODE_TARGET_ID。不要让脚本强行结束已有 ZCode 进程。
 
-### UNSUPPORTED_VERSION
+### DESKTOP_INTERFACE_UNAVAILABLE
 
-当前适配器只验证了 3.12.1。不要直接修改版本判断；请先记录新版本的服务方法、请求和响应，更新适配器与测试，再发布新版本。
+当前桌面缺少适配器实际需要的服务或方法。记录错误中列出的服务方法，先确认目标 ZCode 是否已完成渲染，再更新适配器与测试；不要把版本号当作接口兼容性的替代证明。
 
 ### WORKSPACE_BUSY
 
@@ -286,7 +286,7 @@ npm run verify:mcp
 src/mcp/                         MCP 工具注册与生命周期
 src/tasks/                       状态机、租约、去重、文件结果
 src/storage/                     SQLite 任务和操作记录
-src/adapters/zcode-desktop/      ZCode 3.12.1 版本适配器
+src/adapters/zcode-desktop/      ZCode desktop 接口适配器
 src/results/                     文件基线和变化清单
 skills/zcode-delegation/         Codex 自动委派规则
 scripts/                         诊断、CDP 探针、打包和验收脚本

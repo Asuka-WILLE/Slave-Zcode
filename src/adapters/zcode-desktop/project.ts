@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { BridgeError } from '../../errors.js';
 import type { Observation, StoredTask, TaskStatus } from '../../types.js';
 
-// ZCode 3.12.1 legacy readSession projection. Only verified structural fields are consumed.
+// ZCode desktop readSession projection. Only verified structural fields are consumed.
 export function projectSnapshot(raw: any, task: StoredTask): Observation {
   if (!raw?.session || !Array.isArray(raw.messages) || !raw.runtime || raw.session.sessionId !== task.zcode_session_id)
     throw new BridgeError('PROTOCOL_MISMATCH', 'ZCode returned an unexpected session snapshot.');

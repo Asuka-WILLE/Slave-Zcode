@@ -21,8 +21,6 @@ export interface InstallDiscoveryOptions {
   registryPaths?: string[];
   pathPaths?: string[];
   shortcutPaths?: string[];
-  readVersion?: (path: string) => string;
-  preferredVersion?: string;
 }
 
 const executableName = 'ZCode.exe';
@@ -162,19 +160,6 @@ export function discoverZCodeInstall(options: InstallDiscoveryOptions = {}): Ins
 
   const valid = candidates.filter(candidate => validInstall(candidate.path));
   if (!valid.length) return { candidates, checked: candidates.map(candidate => candidate.path) };
-
-  if (options.readVersion && options.preferredVersion) {
-    for (const candidate of valid) {
-      try {
-        if (options.readVersion(candidate.path) === options.preferredVersion) {
-          return { path: candidate.path, candidates, checked: candidates.map(item => item.path) };
-        }
-      } catch {
-        // A malformed candidate is left in the diagnostic list, but does not
-        // prevent a later valid installation from being selected.
-      }
-    }
-  }
   return { path: valid[0]!.path, candidates, checked: candidates.map(candidate => candidate.path) };
 }
 

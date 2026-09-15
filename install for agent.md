@@ -28,7 +28,7 @@
 | 市场入口 | .agents/plugins/marketplace.json |
 | 插件源路径 | ./，相对于市场根目录 |
 | 插件选择器 | zcode-subagent@slave-zcode |
-| 已验证桌面版本 | ZCode 3.12.1 |
+| 接口回归基线 | ZCode 3.12.1（历史环境，不是运行门槛） |
 | 已要求 Node 版本 | Node.js 24+ |
 
 如果清单中的名称、版本或市场名发生变化，以当前文件读取结果为准，不要继续使用上表中的旧值。codex plugin add 接受的是 插件名@市场名，不能把插件目录直接当成插件参数传入。
@@ -213,7 +213,7 @@ npm run bundle 可能更新仓库中的 bundle/server.mjs。智能体应检查 g
 
 ## 阶段六：准备 ZCode 桌面桥接
 
-插件安装成功不代表桌面桥接已经连接。目标机器还需要 Windows、Node.js 24+ 和已配置模型通道的 ZCode 3.12.1。
+插件安装成功不代表桌面桥接已经连接。目标机器还需要 Windows、Node.js 24+ 和已配置模型通道的 ZCode 桌面；适配器会按实际调用的方法检查运行时接口，应用版本只用于诊断。
 
 启动前先让用户正常结束 ZCode 中正在运行的任务并关闭窗口。不要杀进程，也不要在任务运行时强行重启。插件的启动脚本会自动从进程、注册表、PATH、快捷方式和常见目录发现 ZCode 安装位置：
 
@@ -237,11 +237,11 @@ npm run doctor
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-zcode.ps1 -InstallDir 'D:\Apps\ZCode'
 ~~~
 
-npm run doctor 中同时满足下面条件，才可以报告桥接入口可用：
+npm run doctor 和 zcode_health 合并满足下面条件，才可以报告桥接入口可用：
 
 - installed: true
 - desktop_connected: true
-- 桌面版本为 3.12.1
+- zcode_health 返回 connected: true，且没有缺失接口方法
 - 能够读取目标 renderer page 或本机 CDP 页面
 
 installed: true 只证明找到了安装文件；它不证明模型已经登录、任务能够执行或项目结果正确。
@@ -268,7 +268,7 @@ installed: true 只证明找到了安装文件；它不证明模型已经登录�
 | 插件安装后没有出现在当前对话 | 新建 Codex 对话或重载宿主，再重新检查插件列表。 |
 | ZCODE_NOT_FOUND | 运行 npm run doctor；普通安装会自动发现，自定义/便携版设置 ZCODE_INSTALL_DIR 或 -InstallDir。 |
 | DESKTOP_UNAVAILABLE | 确认 ZCode 已按要求正常关闭并通过 start-zcode.ps1 启动，检查 http://127.0.0.1:19222。不要杀进程。 |
-| UNSUPPORTED_VERSION | 当前适配器只验证了 ZCode 3.12.1。记录版本和协议证据，不要直接删除版本判断。 |
+| DESKTOP_INTERFACE_UNAVAILABLE | 桌面缺少适配器实际需要的服务或方法。记录错误列出的名称，确认 renderer 已完成加载，再核对协议接口。 |
 | npm ci 或 npm run bundle 失败 | 保留日志和工作区修改，先报告 Node.js 版本、失败命令和首个错误；不要用清理工作区的方式“修复”。 |
 
 ## 完成报告格式
