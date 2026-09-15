@@ -23,7 +23,8 @@
 | --- | --- |
 | Git 仓库 | https://github.com/Asuka-WILLE/Slave-Zcode.git |
 | 插件名 | zcode-subagent |
-| 版本 | 0.1.0 |
+| 版本 | 1.0.0 |
+| GitHub 标签 | v1.0.0 |
 | 市场名 | slave-zcode |
 | 市场入口 | .agents/plugins/marketplace.json |
 | 插件源路径 | ./，相对于市场根目录 |

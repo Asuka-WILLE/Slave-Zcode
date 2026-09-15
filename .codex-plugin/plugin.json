@@ -1,6 +1,6 @@
 {
   "name": "zcode-subagent",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Delegate local development to visible ZCode desktop tasks with model selection, recovery and result review.",
   "author": {
     "name": "Asuka-WILLE"

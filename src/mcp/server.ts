@@ -13,7 +13,7 @@ const id = z.string().trim().min(1).max(200);
 const path = z.string().min(1).max(32767);
 const message = z.string().trim().min(1).max(100000);
 export function createServer(manager: TaskManager) {
-  const server = new McpServer({ name: 'zcode-mcp-server', version: '0.1.0' });
+  const server = new McpServer({ name: 'zcode-mcp-server', version: '1.0.0' });
   const run = async (action: () => Promise<unknown> | unknown) => {
     try {
       const value = await action(); const output = { result: value };

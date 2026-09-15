@@ -37457,7 +37457,7 @@ var id = external_exports.string().trim().min(1).max(200);
 var path = external_exports.string().min(1).max(32767);
 var message = external_exports.string().trim().min(1).max(1e5);
 function createServer(manager) {
-  const server = new McpServer({ name: "zcode-mcp-server", version: "0.1.0" });
+  const server = new McpServer({ name: "zcode-mcp-server", version: "1.0.0" });
   const run = async (action) => {
     try {
       const value = await action();

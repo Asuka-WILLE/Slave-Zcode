@@ -2,6 +2,14 @@
 
 历史回归环境：Windows；ZCode 3.12.1；内置 CLI 0.16.5；Node.js 24.14.1。
 
+## v1.0.0 发布验证（2026-09-15）
+
+- `npm test`：22 项测试通过，覆盖 V1 版本兼容性、版本元数据不可读、运行时接口缺失和安装候选顺序。
+- `npm run check`：插件清单、MCP 声明、市场入口和发布 bundle 校验通过。
+- `npm run bundle`：源码重新打包后，`git diff --exit-code -- bundle/server.mjs` 通过。
+- GitHub Actions 的 `test (ubuntu-latest)` 和 `test (windows-latest)` 均通过。
+- 本机验收时 ZCode 未运行，`npm run doctor` 的 `desktop_connected` 为 `false`；真实 `zcode_health`、`zcode_list_models` 和任务执行留待目标桌面启动后完成。
+
 ## 已实测
 
 - CDP 连接到正在运行的桌面，通过 React App 的 services 读取真实任务/会话服务；未修改安装包。
